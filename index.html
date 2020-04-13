@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/v/dt/jq-3.3.1/jszip-2.5.0/dt-1.10.20/b-1.6.1/b-colvis-1.6.1/b-html5-1.6.1/b-print-1.6.1/datatables.min.css"/>
+
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.36/pdfmake.min.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.36/vfs_fonts.js"></script>
+    <script type="text/javascript" src="https://cdn.datatables.net/v/dt/jq-3.3.1/jszip-2.5.0/dt-1.10.20/b-1.6.1/b-colvis-1.6.1/b-html5-1.6.1/b-print-1.6.1/datatables.min.js"></script>
+    <style>
+        #report {
+            width: 100%;
+            font-size: 0.8em;
+        }
+
+        #report tr[role="row"] td {
+            font-family: "Lucida Console", Monaco, monospace
+        }
+
+        #report th {
+            text-align: left
+        }
+
+        table.dataTable.hover tbody tr:hover, table.dataTable.display tbody tr:hover {
+            background-color: #cfdeff;
+        }
+
+        table.dataTable.display tbody tr:hover > .sorting_1, table.dataTable.order-column.hover tbody tr:hover > .sorting_1 {
+            background-color: #c0ceef;
+        }
+
+        .topic-tag {
+            display: inline-block;
+            padding: .3em .9em;
+            margin: 0 .5em .5em 0;
+            white-space: nowrap;
+            background-color: #f1f8ff;
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body>
+<table class='stripe row-border order-column hover' id='report' style="width:100%">
+    <tr>
+        <td style="text-align: center" id="LoadingCompletion">Loading data...</td>
+    </tr>
+</table>
+<script type="text/javascript">
+    const GITHUB_API = 'https://api.github.com';
+    const GUTHUB_USER = 'koriit';
+    const GITHUB_ACCEPT_MEDIA = 'application/vnd.github.mercy-preview+json';
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const withToken = urlParams.get('withToken') !== null;
+    const authToken = withToken ? prompt("Provide GitHub Private Access Token") : "";
+    const authorization = authToken ? "Basic " + window.btoa(`${GUTHUB_USER}:${authToken}`) : "";
+
+    let completed = 0;
+    let loader = $("#LoadingCompletion");
+
+    function updateProgress(progress) {
+        completed += progress;
+        loader.html("Loading data... <br/>" + Math.round(completed * 100) + "%");
+    }
+
+    async function asyncCall() {
+        // 0%
+        updateProgress(0);
+
+        let repos = await fetch(GITHUB_API + "/users/" + GUTHUB_USER + "/repos", {
+            headers: {
+                'Accept': GITHUB_ACCEPT_MEDIA,
+                "Authorization": authorization
+            }
+        });
+        repos = await repos.json();
+
+        progressStep = 1 / (repos.length + 1)
+        updateProgress(progressStep);
+
+        let data = [];
+        async function readRepo(repo) {
+            if (repo.topics.length === 0) {
+                updateProgress(progressStep);
+                return;
+            }
+            let topics = repo.topics.map(topic => `<span class='topic-tag'>${topic}</span>`).join(" ");
+            let repo_url = `<a href='${repo.html_url}'>${repo.full_name}</a>`;
+            let last_push = repo.pushed_at.substr(0, 10)
+            let license = repo.license.spdx_id
+
+            let tags = await fetch(repo.tags_url, {
+                headers: {
+                    "Authorization": authorization
+                }
+            })
+            tags = await tags.json()
+
+            let last_tag = tags.length > 0 ? tags[0].name : ""
+
+            let badges = [
+                {
+                    name: "Travis CI",
+                    link: `https://www.travis-ci.org/${repo.full_name}`,
+                    img: `https://www.travis-ci.org/${repo.full_name}.svg?branch=${repo.default_branch}`
+                }
+            ]
+
+            let language = repo.language
+            if (["Kotlin"].includes(language)) {
+                if (last_tag) {
+                    badges.push({
+                        name: "Latest Version",
+                        link: `https://bintray.com/koriit/kotlin/${repo.name}/_latestVersion`,
+                        img: `https://api.bintray.com/packages/koriit/kotlin/${repo.name}/images/download.svg`
+                    })
+                }
+                badges.push(
+                    {
+                        name: "CodeFactor",
+                        link: `https://www.codefactor.io/repository/github/${repo.full_name}`,
+                        img: `https://www.codefactor.io/repository/github/${repo.full_name}/badge`
+                    }
+                )
+            }
+
+            badges.push({
+                name: "License",
+                link: repo.html_url,
+                img: `https://img.shields.io/github/license/${repo.full_name}`
+            })
+
+            badges = badges.map(badge => `<a href="${badge.link}"><img src="${badge.img}" alt="${badge.name}"></a>`).join(" ")
+
+            data.push([repo_url, language, last_tag, last_push, badges, topics]);
+            updateProgress(progressStep);
+        }
+
+        let jobs = repos.map(repo => readRepo(repo))
+        for (let job of jobs) {
+            await job
+        }
+
+        $("#report").DataTable({
+            data: data,
+            paging: false,
+            order: [[1, 'asc']],
+            columns: [
+                {title: "Repository"},
+                {title: "Language"},
+                {title: "Last Tag"},
+                {title: "Last Push"},
+                {title: "Badges", width: "30%"},
+                {title: "Topics"},
+            ]
+
+        });
+    }
+
+    asyncCall();
+</script>
+</body>
+</html>
