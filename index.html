@@ -84,9 +84,8 @@
                 return;
             }
             let topics = repo.topics.map(topic => `<span class='topic-tag'>${topic}</span>`).join(" ");
-            let repo_url = `<a href='${repo.html_url}'>${repo.full_name}</a>`;
+            let repo_url = `<a href='${repo.html_url}'>${repo.name}</a>`;
             let last_push = repo.pushed_at.substr(0, 10)
-            let license = repo.license.spdx_id
 
             let tags = await fetch(repo.tags_url, {
                 headers: {
