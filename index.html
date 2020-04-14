@@ -78,6 +78,7 @@
         updateProgress(progressStep);
 
         let data = [];
+
         async function readRepo(repo) {
             if (repo.topics.length === 0) {
                 updateProgress(progressStep);
@@ -120,6 +121,15 @@
                         img: `https://www.codefactor.io/repository/github/${repo.full_name}/badge`
                     }
                 )
+            }
+            if (["PHP"].includes(language)) {
+                if (last_tag) {
+                    badges.push({
+                        name: "Latest Version",
+                        link: `https://packagist.org/packages/${repo.full_name}`,
+                        img: `https://poser.pugx.org/${repo.full_name}/v/stable`
+                    })
+                }
             }
 
             badges.push({
