@@ -50,8 +50,10 @@
     const GITHUB_ACCEPT_MEDIA = 'application/vnd.github.mercy-preview+json';
 
     const urlParams = new URLSearchParams(window.location.search);
-    const withToken = urlParams.get('withToken') !== null;
-    const authToken = withToken ? prompt("Provide GitHub Private Access Token") : "";
+    let authToken = urlParams.get('withToken');
+    if (authToken !== null && authToken.length == 0) {
+        authToken = prompt("Provide GitHub Private Access Token")
+    }
     const authorization = authToken ? "Basic " + window.btoa(`${GUTHUB_USER}:${authToken}`) : "";
 
     let completed = 0;
@@ -84,9 +86,12 @@
                 updateProgress(progressStep);
                 return;
             }
-            let topics = repo.topics.map(topic => `<span class='topic-tag'>${topic}</span>`).join(" ");
             let repo_url = `<a href='${repo.html_url}'>${repo.name}</a>`;
-            let last_push = repo.pushed_at.substr(0, 10)
+            
+            let now = new Date()
+            let last_push = new Date(Date.parse(repo.pushed_at))
+            let inactivity_days =  Math.round((now.getTime() - last_push.getTime()) / (1000 * 3600 * 24)) 
+            let last_push_date = repo.pushed_at.substr(0, 10)
 
             let tags = await fetch(repo.tags_url, {
                 headers: {
@@ -102,11 +107,28 @@
                     name: "Travis CI",
                     link: `https://www.travis-ci.org/${repo.full_name}`,
                     img: `https://www.travis-ci.org/${repo.full_name}.svg?branch=${repo.default_branch}`
+                },
+                {
+                    name: "Issues",
+                    link: repo.html_url + "/issues",
+                    img: `https://img.shields.io/github/issues/${repo.full_name}`
+                },
+                {
+                    name: "Pull Requests",
+                    link: repo.html_url + "/pulls",
+                    img: `https://img.shields.io/github/issues-pr/${repo.full_name}`
                 }
             ]
 
             let language = repo.language
             if (["Kotlin"].includes(language)) {
+                let gradle = await fetch(`https://raw.githubusercontent.com/${repo.full_name}/master/build.gradle`)
+                gradle = await gradle.text()
+
+                kotlin_version = gradle.split("\n").find(line => line.indexOf("org.jetbrains.kotlin.jvm") != -1).match(/\d[\d\.]+/g)[0]
+
+                language = `<img src="https://img.shields.io/badge/Kotlin-${kotlin_version}-blue">`
+
                 if (last_tag) {
                     badges.push({
                         name: "Latest Version",
@@ -140,7 +162,7 @@
 
             badges = badges.map(badge => `<a href="${badge.link}"><img src="${badge.img}" alt="${badge.name}"></a>`).join(" ")
 
-            data.push([repo_url, language, last_tag, last_push, badges, topics]);
+            data.push([repo_url, language, `${inactivity_days}d`, last_push_date, last_tag, badges]);
             updateProgress(progressStep);
         }
 
@@ -156,10 +178,10 @@
             columns: [
                 {title: "Repository"},
                 {title: "Language"},
-                {title: "Last Tag"},
                 {title: "Last Push"},
-                {title: "Badges", width: "30%"},
-                {title: "Topics"},
+                {title: "Last Push Date"},
+                {title: "Last Tag"},
+                {title: "Badges", width: "60%"},
             ]
 
         });
