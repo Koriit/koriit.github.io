@@ -132,8 +132,8 @@
                 if (last_tag) {
                     badges.push({
                         name: "Latest Version",
-                        link: `https://bintray.com/koriit/kotlin/${repo.name}/_latestVersion`,
-                        img: `https://api.bintray.com/packages/koriit/kotlin/${repo.name}/images/download.svg`
+                        link: `https://search.maven.org/search?q=g:%22com.koriit.kotlin%22%20AND%20a:%22${repo.name}%22`,
+                        img: `https://img.shields.io/maven-central/v/com.koriit.kotlin/${repo.name}.svg?label=Maven%20Central`
                     })
                 }
                 badges.push(
