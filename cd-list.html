@@ -23,6 +23,7 @@
     </table>
 </div>
 <script src="albums.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
 <script>
 
 const urlParams = new URLSearchParams(window.location.search);
@@ -47,6 +48,8 @@ function renderTable() {
         <td>
           <button class="btn btn-sm btn-secondary move-up" data-index="${idx}">&#8593;</button>
           <button class="btn btn-sm btn-secondary move-down" data-index="${idx}">&#8595;</button>
+          <button class="btn btn-sm btn-secondary upload-thumb" data-index="${idx}">Thumb</button>
+          <input type="file" accept="image/*" class="thumb-input d-none" data-index="${idx}">
         </td>
       `;
     } else {
@@ -73,6 +76,15 @@ window.addEventListener('DOMContentLoaded', () => {
   renderTable();
 
   if (isAdmin) {
+    Sortable.create(tbody, {
+      animation: 150,
+      onEnd: e => {
+        const item = albums.splice(e.oldIndex, 1)[0];
+        albums.splice(e.newIndex, 0, item);
+        renderTable();
+      }
+    });
+
     tbody.addEventListener('click', e => {
       const index = parseInt(e.target.dataset.index);
       if (e.target.classList.contains('move-up') && index > 0) {
@@ -81,6 +93,8 @@ window.addEventListener('DOMContentLoaded', () => {
       } else if (e.target.classList.contains('move-down') && index < albums.length - 1) {
         [albums[index + 1], albums[index]] = [albums[index], albums[index + 1]];
         renderTable();
+      } else if (e.target.classList.contains('upload-thumb')) {
+        e.target.parentElement.querySelector('.thumb-input').click();
       }
     });
 
@@ -88,6 +102,26 @@ window.addEventListener('DOMContentLoaded', () => {
       if (e.target.classList.contains('owned-checkbox')) {
         const index = parseInt(e.target.dataset.index);
         albums[index].owned = e.target.checked;
+      } else if (e.target.classList.contains('thumb-input')) {
+        const idx = parseInt(e.target.dataset.index);
+        const file = e.target.files[0];
+        if (file) {
+          const reader = new FileReader();
+          reader.onload = ev => {
+            const img = new Image();
+            img.onload = () => {
+              const canvas = document.createElement('canvas');
+              canvas.width = 50;
+              canvas.height = 50;
+              const ctx = canvas.getContext('2d');
+              ctx.drawImage(img, 0, 0, 50, 50);
+              albums[idx].thumb = canvas.toDataURL('image/jpeg');
+              renderTable();
+            };
+            img.src = ev.target.result;
+          };
+          reader.readAsDataURL(file);
+        }
       }
     });
 
