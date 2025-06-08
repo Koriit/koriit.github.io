@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <title>Lista płyt CD</title>
+    <meta name="robots" content="noindex">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body class="p-4">
+<div class="container">
+    <h1 class="mb-3">Lista płyt CD</h1>
+    <p>Ta strona zawiera listę albumów, które chciałbym mieć. Nie jest nigdzie linkowana, więc proszę zachować adres w zakładkach.</p>
+    <table class="table table-striped">
+        <thead>
+        <tr>
+            <th>Lp.</th>
+            <th>Zespół</th>
+            <th>Album</th>
+            <th>Posiadam?</th>
+        </tr>
+        </thead>
+        <tbody id="album-table-body"></tbody>
+    </table>
+</div>
+<script>
+const placeholderImage = "data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=";
+const albums = [
+    {"rank":1,"band":"Perfect","album":"Perfect","owned":false,"thumb":placeholderImage},
+    {"rank":2,"band":"Perfect","album":"UNU","owned":false,"thumb":placeholderImage},
+    {"rank":3,"band":"Perfect","album":"Jestem","owned":false,"thumb":placeholderImage},
+    {"rank":4,"band":"Perfect","album":"Geny","owned":false,"thumb":placeholderImage},
+    {"rank":5,"band":"Perfect","album":"Śmigło","owned":false,"thumb":placeholderImage},
+    {"rank":6,"band":"Perfect","album":"Schody","owned":false,"thumb":placeholderImage},
+    {"rank":7,"band":"Perfect","album":"XXX","owned":false,"thumb":placeholderImage},
+    {"rank":8,"band":"Perfect","album":"DaDaDam","owned":false,"thumb":placeholderImage},
+    {"rank":9,"band":"Perfect","album":"Muzyka","owned":false,"thumb":placeholderImage},
+    {"rank":10,"band":"Budka Suflera","album":"Cień wielkiej góry","owned":true,"thumb":placeholderImage},
+    {"rank":11,"band":"Budka Suflera","album":"Przechodniem byłem między wami","owned":false,"thumb":placeholderImage},
+    {"rank":12,"band":"Budka Suflera","album":"Na brzegu światła","owned":false,"thumb":placeholderImage},
+    {"rank":13,"band":"Budka Suflera","album":"Ona przyszła prosto z chmur","owned":false,"thumb":placeholderImage},
+    {"rank":14,"band":"Budka Suflera","album":"Za ostatni grosz","owned":false,"thumb":placeholderImage},
+    {"rank":15,"band":"Budka Suflera","album":"Czas czekania, czas olśnienia","owned":false,"thumb":placeholderImage},
+    {"rank":16,"band":"Budka Suflera","album":"Giganci tańczą","owned":false,"thumb":placeholderImage},
+    {"rank":17,"band":"Budka Suflera","album":"Ratujmy co się da","owned":false,"thumb":placeholderImage},
+    {"rank":18,"band":"Budka Suflera","album":"Cisza","owned":false,"thumb":placeholderImage},
+    {"rank":19,"band":"Budka Suflera","album":"Noc","owned":false,"thumb":placeholderImage},
+    {"rank":20,"band":"Budka Suflera","album":"Nic nie boli, tak jak życie","owned":false,"thumb":placeholderImage},
+    {"rank":21,"band":"Budka Suflera","album":"Bal wszystkich świętych","owned":false,"thumb":placeholderImage},
+    {"rank":22,"band":"Budka Suflera","album":"Mokre oczy","owned":false,"thumb":placeholderImage},
+    {"rank":23,"band":"Budka Suflera","album":"Jest","owned":false,"thumb":placeholderImage},
+    {"rank":24,"band":"Budka Suflera","album":"Zawsze czegoś brak","owned":false,"thumb":placeholderImage},
+    {"rank":25,"band":"Budka Suflera","album":"10 lat samotności","owned":false,"thumb":placeholderImage},
+    {"rank":26,"band":"Budka Suflera","album":"Skaza","owned":false,"thumb":placeholderImage},
+    {"rank":27,"band":"AC/DC","album":"High Voltage (Australasia)","owned":false,"thumb":placeholderImage},
+    {"rank":28,"band":"AC/DC","album":"T.N.T.","owned":false,"thumb":placeholderImage},
+    {"rank":29,"band":"AC/DC","album":"High Voltage","owned":false,"thumb":placeholderImage},
+    {"rank":30,"band":"AC/DC","album":"Dirty Deeds Done Dirt Cheap","owned":false,"thumb":placeholderImage},
+    {"rank":31,"band":"AC/DC","album":"Let There Be Rock","owned":false,"thumb":placeholderImage},
+    {"rank":32,"band":"AC/DC","album":"Powerage","owned":false,"thumb":placeholderImage},
+    {"rank":33,"band":"AC/DC","album":"Highway to Hell","owned":false,"thumb":placeholderImage},
+    {"rank":34,"band":"AC/DC","album":"Back in Black","owned":false,"thumb":placeholderImage},
+    {"rank":35,"band":"AC/DC","album":"For Those About to Rock We Salute You","owned":false,"thumb":placeholderImage},
+    {"rank":36,"band":"AC/DC","album":"Flick of the Switch","owned":false,"thumb":placeholderImage},
+    {"rank":37,"band":"AC/DC","album":"Fly on the Wall","owned":false,"thumb":placeholderImage},
+    {"rank":38,"band":"AC/DC","album":"Blow Up Your Video","owned":false,"thumb":placeholderImage},
+    {"rank":39,"band":"AC/DC","album":"The Razors Edge","owned":false,"thumb":placeholderImage},
+    {"rank":40,"band":"AC/DC","album":"Ballbreaker","owned":false,"thumb":placeholderImage},
+    {"rank":41,"band":"AC/DC","album":"Stiff Upper Lip","owned":false,"thumb":placeholderImage},
+    {"rank":42,"band":"AC/DC","album":"Black Ice","owned":false,"thumb":placeholderImage},
+    {"rank":43,"band":"AC/DC","album":"Rock or Bust","owned":false,"thumb":placeholderImage},
+    {"rank":44,"band":"AC/DC","album":"Power Up","owned":false,"thumb":placeholderImage}
+];
+
+albums.sort((a,b) => a.rank - b.rank);
+
+window.addEventListener('DOMContentLoaded', () => {
+  const tbody = document.getElementById('album-table-body');
+  albums.forEach((album, idx) => {
+    const tr = document.createElement('tr');
+    const ownedText = album.owned ? 'Tak' : 'Nie';
+    tr.innerHTML = `
+      <td>${idx + 1}</td>
+      <td>${album.band}</td>
+      <td><img src="${album.thumb}" alt="miniaturka" class="img-thumbnail me-2" style="width:50px;height:50px;">${album.album}</td>
+      <td>${ownedText}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+});
+</script>
+</body>
+</html>
