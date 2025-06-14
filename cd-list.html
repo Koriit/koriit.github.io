@@ -36,6 +36,31 @@
     </div>
   </div>
 </div>
+<div class="modal fade" id="addModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Add Album</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <form id="addForm">
+          <div class="mb-3">
+            <label for="bandInput" class="form-label">Zespół</label>
+            <input type="text" class="form-control" id="bandInput" required>
+          </div>
+          <div class="mb-3">
+            <label for="albumInput" class="form-label">Album</label>
+            <input type="text" class="form-control" id="albumInput" required>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="submit" form="addForm" class="btn btn-primary" id="saveAlbum">Add</button>
+      </div>
+    </div>
+  </div>
+</div>
 <script src="albums.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
 <script>
@@ -171,14 +196,25 @@ window.addEventListener('DOMContentLoaded', () => {
 
     container.insertBefore(btnGroup, table);
 
+    const addModalEl = document.getElementById('addModal');
+    const addModal = bootstrap.Modal.getOrCreateInstance(addModalEl);
+    const bandInput = document.getElementById('bandInput');
+    const albumInput = document.getElementById('albumInput');
 
     addBtn.addEventListener('click', () => {
-      const band = prompt('Zespół:');
-      if (band === null || band.trim() === '') return;
-      const albumName = prompt('Album:');
-      if (albumName === null || albumName.trim() === '') return;
-      albums.push({ rank: albums.length + 1, band: band.trim(), album: albumName.trim(), owned: false, thumb: '' });
+      bandInput.value = '';
+      albumInput.value = '';
+      addModal.show();
+    });
+
+    document.getElementById('addForm').addEventListener('submit', e => {
+      e.preventDefault();
+      const band = bandInput.value.trim();
+      const albumName = albumInput.value.trim();
+      if (!band || !albumName) return;
+      albums.push({ rank: albums.length + 1, band, album: albumName, owned: false, thumb: '' });
       renderTable();
+      addModal.hide();
     });
 
     exportBtn.addEventListener('click', () => {
