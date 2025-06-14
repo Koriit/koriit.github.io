@@ -227,14 +227,17 @@ window.addEventListener('DOMContentLoaded', () => {
     thumbModalBody.innerHTML = 'Loading...';
     currentThumbIndex = idx;
     thumbModal.show();
-    fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(album.band + ' ' + album.album)}&entity=album&limit=5`)
-      .then(r => r.json())
-      .then(res => {
+    const query = encodeURIComponent(album.band + ' ' + album.album + ' album cover');
+    Promise.all([
+      fetch(`https://itunes.apple.com/search?term=${query}&entity=album&limit=5`).then(r => r.json()),
+      fetch(`https://r.jina.ai/https://www.google.com/search?tbm=isch&q=${query}`).then(r => r.text())
+    ])
+      .then(([itunesRes, googleHtml]) => {
         thumbModalBody.innerHTML = '';
-        if (res.results.length === 0) {
-          thumbModalBody.textContent = 'No thumbnails found.';
-        } else {
-          res.results.forEach(r => {
+        let found = false;
+
+        if (itunesRes.results.length > 0) {
+          itunesRes.results.forEach(r => {
             const url = r.artworkUrl100.replace('100x100bb', '200x200bb');
             const img = document.createElement('img');
             img.src = url;
@@ -243,7 +246,29 @@ window.addEventListener('DOMContentLoaded', () => {
             img.style.cursor = 'pointer';
             thumbModalBody.appendChild(img);
           });
+          found = true;
         }
+
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(googleHtml, 'text/html');
+        Array.from(doc.querySelectorAll('img'))
+          .map(i => i.src)
+          .filter(src => src && src.startsWith('http'))
+          .slice(0, 5)
+          .forEach(url => {
+            const img = document.createElement('img');
+            img.src = url;
+            img.dataset.url = url;
+            img.className = 'img-thumbnail m-1 thumb-option';
+            img.style.cursor = 'pointer';
+            thumbModalBody.appendChild(img);
+            found = true;
+          });
+
+        if (!found) {
+          thumbModalBody.textContent = 'No thumbnails found.';
+        }
+
         const manual = document.createElement('button');
         manual.className = 'btn btn-secondary mt-2';
         manual.textContent = 'Manual Upload';
