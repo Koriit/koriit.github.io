@@ -61,6 +61,18 @@
     </div>
   </div>
 </div>
+<div class="modal fade" id="thumbModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="thumbModalTitle">Select Thumbnail</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body" id="thumbModalBody">
+      </div>
+    </div>
+  </div>
+</div>
 <script src="albums.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
 <script>
@@ -68,6 +80,10 @@
 const urlParams = new URLSearchParams(window.location.search);
 const isAdmin = urlParams.has('admin');
 let tbody;
+let thumbModal;
+let thumbModalBody;
+let thumbModalTitle;
+let currentThumbIndex = null;
 
 function updateRanks() {
   albums.forEach((a, i) => a.rank = i + 1);
@@ -147,7 +163,7 @@ window.addEventListener('DOMContentLoaded', () => {
         albums.splice(index, 1);
         renderTable();
       } else if (e.target.classList.contains('upload-thumb')) {
-        e.target.parentElement.querySelector('.thumb-input').click();
+        showThumbModal(index);
       }
     });
 
@@ -196,10 +212,67 @@ window.addEventListener('DOMContentLoaded', () => {
 
     container.insertBefore(btnGroup, table);
 
-    const addModalEl = document.getElementById('addModal');
-    const addModal = bootstrap.Modal.getOrCreateInstance(addModalEl);
-    const bandInput = document.getElementById('bandInput');
-    const albumInput = document.getElementById('albumInput');
+  const addModalEl = document.getElementById('addModal');
+  const addModal = bootstrap.Modal.getOrCreateInstance(addModalEl);
+  const bandInput = document.getElementById('bandInput');
+  const albumInput = document.getElementById('albumInput');
+  const thumbModalEl = document.getElementById('thumbModal');
+  thumbModal = bootstrap.Modal.getOrCreateInstance(thumbModalEl);
+  thumbModalBody = document.getElementById('thumbModalBody');
+  thumbModalTitle = document.getElementById('thumbModalTitle');
+
+  function showThumbModal(idx) {
+    const album = albums[idx];
+    thumbModalTitle.textContent = `Select Thumbnail - ${album.band} - ${album.album}`;
+    thumbModalBody.innerHTML = 'Loading...';
+    currentThumbIndex = idx;
+    thumbModal.show();
+    fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(album.band + ' ' + album.album)}&entity=album&limit=5`)
+      .then(r => r.json())
+      .then(res => {
+        thumbModalBody.innerHTML = '';
+        if (res.results.length === 0) {
+          thumbModalBody.textContent = 'No thumbnails found.';
+        } else {
+          res.results.forEach(r => {
+            const url = r.artworkUrl100.replace('100x100bb', '200x200bb');
+            const img = document.createElement('img');
+            img.src = url;
+            img.dataset.url = url;
+            img.className = 'img-thumbnail m-1 thumb-option';
+            img.style.cursor = 'pointer';
+            thumbModalBody.appendChild(img);
+          });
+        }
+        const manual = document.createElement('button');
+        manual.className = 'btn btn-secondary mt-2';
+        manual.textContent = 'Manual Upload';
+        manual.addEventListener('click', () => {
+          thumbModal.hide();
+          tbody.querySelector(`.thumb-input[data-index="${idx}"]`).click();
+        });
+        thumbModalBody.appendChild(document.createElement('br'));
+        thumbModalBody.appendChild(manual);
+      });
+  }
+
+  thumbModalBody.addEventListener('click', e => {
+    if (e.target.classList.contains('thumb-option')) {
+      const img = new Image();
+      img.crossOrigin = 'Anonymous';
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        canvas.width = 50;
+        canvas.height = 50;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, 50, 50);
+        albums[currentThumbIndex].thumb = canvas.toDataURL('image/jpeg');
+        renderTable();
+        thumbModal.hide();
+      };
+      img.src = e.target.dataset.url;
+    }
+  });
 
     addBtn.addEventListener('click', () => {
       bandInput.value = '';
