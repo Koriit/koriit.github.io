@@ -227,10 +227,11 @@ window.addEventListener('DOMContentLoaded', () => {
     thumbModalBody.innerHTML = 'Loading...';
     currentThumbIndex = idx;
     thumbModal.show();
-    const query = encodeURIComponent(album.band + ' ' + album.album + ' album cover art');
+    const searchTerms = encodeURIComponent(album.band + ' ' + album.album);
+    const query = `${searchTerms}+album+cover+art`;
     Promise.all([
-      fetch(`https://itunes.apple.com/search?term=${query}&entity=album&limit=8`).then(r => r.json()),
-      fetch(`https://r.jina.ai/https://www.google.com/search?tbm=isch&q=${query}`).then(r => r.text())
+      fetch(`https://itunes.apple.com/search?term=${searchTerms}&entity=album&limit=8`).then(r => r.json()).catch(() => ({results: []})),
+      fetch(`https://r.jina.ai/https://www.google.com/search?tbm=isch&q=${query}`).then(r => r.text()).catch(() => '')
     ])
       .then(([itunesRes, googleHtml]) => {
         thumbModalBody.innerHTML = '';
