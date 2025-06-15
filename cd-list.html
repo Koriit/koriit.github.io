@@ -227,7 +227,10 @@ window.addEventListener('DOMContentLoaded', () => {
     thumbModalBody.innerHTML = 'Loading...';
     currentThumbIndex = idx;
     thumbModal.show();
-      const searchTerms = encodeURIComponent(`${album.band} ${album.album} ${album.country}`);
+      let search = `${album.band} ${album.album}`;
+      if (album.band.toLowerCase() === album.album.toLowerCase()) search += ' band';
+      if (album.country) search += ` ${album.country}`;
+      const searchTerms = encodeURIComponent(search.trim());
       const query = `${searchTerms}+album+cover+art`;
     Promise.all([
       fetch(`https://itunes.apple.com/search?term=${searchTerms}&entity=album&limit=8`).then(r => r.json()).catch(() => ({results: []})),
@@ -237,11 +240,15 @@ window.addEventListener('DOMContentLoaded', () => {
         thumbModalBody.innerHTML = '';
         let found = false;
 
-        if (itunesRes.results.length > 0) {
+        const filtered = itunesRes.results.filter(r =>
+          r.artistName.toLowerCase().includes(album.band.toLowerCase()) &&
+          r.collectionName.toLowerCase().includes(album.album.toLowerCase())
+        );
+        if (filtered.length > 0) {
             const headerItunes = document.createElement('h6');
             headerItunes.textContent = 'iTunes';
             thumbModalBody.appendChild(headerItunes);
-          itunesRes.results.slice(0,4).forEach(r => {
+          filtered.slice(0,4).forEach(r => {
             const url = r.artworkUrl100.replace('100x100bb', '200x200bb');
             const img = document.createElement('img');
             img.src = url;
