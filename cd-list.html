@@ -227,8 +227,8 @@ window.addEventListener('DOMContentLoaded', () => {
     thumbModalBody.innerHTML = 'Loading...';
     currentThumbIndex = idx;
     thumbModal.show();
-    const searchTerms = encodeURIComponent(album.band + ' ' + album.album);
-    const query = `${searchTerms}+album+cover+art`;
+      const searchTerms = encodeURIComponent(`${album.band} ${album.album} ${album.country}`);
+      const query = `${searchTerms}+album+cover+art`;
     Promise.all([
       fetch(`https://itunes.apple.com/search?term=${searchTerms}&entity=album&limit=8`).then(r => r.json()).catch(() => ({results: []})),
       fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent('https://www.google.com/search?tbm=isch&q=' + query)}`).then(r => r.text()).catch(() => '') // Use allorigins to bypass CORS
@@ -256,8 +256,10 @@ window.addEventListener('DOMContentLoaded', () => {
         const parser = new DOMParser();
         const doc = parser.parseFromString(googleHtml, 'text/html');
         const googleImgs = Array.from(doc.querySelectorAll('img'))
-          .map(i => i.src)
-          .filter(src => src && src.startsWith('http'))
+          .map(i => i.src || i.getAttribute('data-src') || i.getAttribute('data-iurl'))
+          .filter(src => src && (src.startsWith('http') || src.startsWith('//')))
+          .map(src => src.startsWith('//') ? 'https:' + src : src)
+          .filter(src => src.includes('encrypted-tbn'))
           .slice(0, 4);
         if (googleImgs.length > 0) {
           const headerGoogle = document.createElement('h6');
