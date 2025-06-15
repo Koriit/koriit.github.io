@@ -222,6 +222,18 @@ window.addEventListener('DOMContentLoaded', () => {
   thumbModalBody = document.getElementById('thumbModalBody');
   thumbModalTitle = document.getElementById('thumbModalTitle');
 
+  function fetchItunesAlbums(searchTerms) {
+    const url = `https://itunes.apple.com/search?term=${searchTerms}&entity=album&limit=8`;
+    const proxy = `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
+    return fetch(proxy).then(r => r.json()).catch(() => ({results: []}));
+  }
+
+  function fetchGoogleImages(query) {
+    const url = `https://www.google.com/search?tbm=isch&q=${query}`;
+    const proxy = `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
+    return fetch(proxy).then(r => r.text()).catch(() => '');
+  }
+
   function showThumbModal(idx) {
     const album = albums[idx];
     thumbModalTitle.textContent = `Select Thumbnail - ${album.band} - ${album.album}`;
@@ -234,8 +246,8 @@ window.addEventListener('DOMContentLoaded', () => {
       const searchTerms = encodeURIComponent(search.trim());
       const query = `${searchTerms}+album+cover+art`;
     Promise.all([
-      fetch(`https://itunes.apple.com/search?term=${searchTerms}&entity=album&limit=8`).then(r => r.json()).catch(() => ({results: []})),
-      fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent('https://www.google.com/search?tbm=isch&q=' + query)}`).then(r => r.text()).catch(() => '') // Use allorigins to bypass CORS
+      fetchItunesAlbums(searchTerms),
+      fetchGoogleImages(query)
     ])
       .then(([itunesRes, googleHtml]) => {
         thumbModalBody.innerHTML = '';
