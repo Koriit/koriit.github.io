@@ -1,195 +1,155 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/v/dt/jq-3.3.1/jszip-2.5.0/dt-1.10.20/b-1.6.1/b-colvis-1.6.1/b-html5-1.6.1/b-print-1.6.1/datatables.min.css"/>
-    <title>Repo List</title>
-
-    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.36/pdfmake.min.js"></script>
-    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.36/vfs_fonts.js"></script>
-    <script type="text/javascript" src="https://cdn.datatables.net/v/dt/jq-3.3.1/jszip-2.5.0/dt-1.10.20/b-1.6.1/b-colvis-1.6.1/b-html5-1.6.1/b-print-1.6.1/datatables.min.js"></script>
-    <style>
-        #report {
-            width: 100%;
-            font-size: 0.8em;
-        }
-
-        #report tr[role="row"] td {
-            font-family: "Lucida Console", Monaco, monospace
-        }
-
-        #report th {
-            text-align: left
-        }
-
-        table.dataTable.hover tbody tr:hover, table.dataTable.display tbody tr:hover {
-            background-color: #cfdeff;
-        }
-
-        table.dataTable.display tbody tr:hover > .sorting_1, table.dataTable.order-column.hover tbody tr:hover > .sorting_1 {
-            background-color: #c0ceef;
-        }
-
-        .topic-tag {
-            display: inline-block;
-            padding: .3em .9em;
-            margin: 0 .5em .5em 0;
-            white-space: nowrap;
-            background-color: #f1f8ff;
-            border-radius: 3px;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Random Dev Meme</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap');
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'JetBrains Mono', monospace;
+      background: #0d1117; color: #c9d1d9;
+      min-height: 100vh; display: flex; flex-direction: column;
+      align-items: center; justify-content: center; padding: 2rem;
+    }
+    .meme-card {
+      max-width: 600px; width: 100%; background: #161b22;
+      border: 1px solid #30363d; border-radius: 8px; overflow: hidden;
+    }
+    .meme-header {
+      padding: 1rem 1.25rem; border-bottom: 1px solid #30363d;
+      display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+    }
+    .meme-title { font-size: 0.85rem; font-weight: 700; line-height: 1.4; flex: 1; }
+    .meme-meta { font-size: 0.7rem; color: #8b949e; white-space: nowrap; }
+    .meme-img-wrap {
+      position: relative; min-height: 200px; display: flex;
+      align-items: center; justify-content: center; background: #0d1117;
+    }
+    .meme-img-wrap img { display: block; width: 100%; height: auto; }
+    .meme-footer {
+      padding: 0.75rem 1.25rem; border-top: 1px solid #30363d;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    button {
+      font-family: inherit; font-size: 0.8rem; font-weight: 700;
+      padding: 0.5rem 1.25rem; border: 1px solid #58a6ff; border-radius: 6px;
+      background: transparent; color: #58a6ff; cursor: pointer; transition: all 0.15s;
+    }
+    button:hover { background: #58a6ff; color: #0d1117; }
+    button:disabled { opacity: 0.4; cursor: wait; }
+    .source-link { font-size: 0.7rem; color: #8b949e; text-decoration: none; }
+    .source-link:hover { color: #58a6ff; }
+    .spinner {
+      width: 28px; height: 28px; border: 3px solid #30363d;
+      border-top-color: #58a6ff; border-radius: 50%; animation: spin .6s linear infinite;
+    }
+    .error-msg { padding: 2rem; text-align: center; color: #f85149; font-size: 0.8rem; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
 </head>
 <body>
-<div style="position: fixed; top: 0; left: 0; font-size: 0.8em; color: grey; opacity: 0.6; padding: 2px;">5d2559e 2025-06-15</div>
-<table class='stripe row-border order-column hover' id='report' style="width:100%">
-    <tr>
-        <td style="text-align: center" id="LoadingCompletion">Loading data...</td>
-    </tr>
-</table>
-<script type="text/javascript">
-    const GITHUB_API = 'https://api.github.com';
-    const GUTHUB_USER = 'koriit';
-    const GITHUB_ACCEPT_MEDIA = 'application/vnd.github.mercy-preview+json';
 
-    const urlParams = new URLSearchParams(window.location.search);
-    let authToken = urlParams.get('withToken');
-    if (authToken !== null && authToken.length == 0) {
-        authToken = prompt("Provide GitHub Private Access Token")
+<div class="meme-card">
+  <div class="meme-header">
+    <span class="meme-title" id="title">Loading…</span>
+    <span class="meme-meta" id="meta"></span>
+  </div>
+  <div class="meme-img-wrap" id="imageWrap">
+    <div class="spinner"></div>
+  </div>
+  <div class="meme-footer">
+    <button id="btn" onclick="showNext()" disabled>Next meme</button>
+    <a class="source-link" id="postLink" href="#" target="_blank" rel="noopener">view on reddit ↗</a>
+  </div>
+</div>
+
+<script>
+  const $title = document.getElementById('title');
+  const $meta  = document.getElementById('meta');
+  const $wrap  = document.getElementById('imageWrap');
+  const $btn   = document.getElementById('btn');
+  const $link  = document.getElementById('postLink');
+
+  let pool = [];
+  let poolIdx = 0;
+  let redditAfter = '';
+
+  // ── Fetch a batch of image posts from r/ProgrammerHumor ──────────
+  async function fetchPool() {
+    const url =
+      `https://www.reddit.com/r/ProgrammerHumor/hot.json?limit=50&raw_json=1` +
+      (redditAfter ? `&after=${redditAfter}` : '');
+
+    const res = await fetch(url, {
+      headers: { 'Accept': 'application/json' }
+    });
+    if (!res.ok) throw new Error(`Reddit returned ${res.status}`);
+    const json = await res.json();
+    redditAfter = json.data.after || '';
+
+    const posts = json.data.children
+      .map(c => c.data)
+      .filter(d =>
+        !d.over_18 &&
+        !d.is_video &&
+        d.post_hint === 'image' &&
+        /\.(jpg|jpeg|png|gif|webp)(\?.*)?$/i.test(d.url)
+      )
+      .map(d => ({
+        title:    d.title,
+        url:      d.url,
+        ups:      d.ups,
+        postLink: `https://reddit.com${d.permalink}`,
+        sub:      d.subreddit,
+      }));
+
+    // shuffle
+    for (let i = posts.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [posts[i], posts[j]] = [posts[j], posts[i]];
     }
-    const authorization = authToken ? "Basic " + window.btoa(`${GUTHUB_USER}:${authToken}`) : "";
+    return posts;
+  }
 
-    let completed = 0;
-    let loader = $("#LoadingCompletion");
+  // ── Display one meme ────────────────────────────────────────────
+  function renderMeme(meme) {
+    $title.textContent = meme.title;
+    $meta.textContent  = `r/${meme.sub} · ⬆ ${meme.ups}`;
+    $link.href = meme.postLink;
 
-    function updateProgress(progress) {
-        completed += progress;
-        loader.html("Loading data... <br/>" + Math.round(completed * 100) + "%");
+    const img = new Image();
+    img.alt = meme.title;
+    img.onload = () => {
+      $wrap.innerHTML = '';
+      $wrap.appendChild(img);
+      $btn.disabled = false;
+    };
+    img.onerror = () => showNext(); // skip broken images
+    img.src = meme.url;
+  }
+
+  // ── Next ────────────────────────────────────────────────────────
+  async function showNext() {
+    $btn.disabled = true;
+    $wrap.innerHTML = '<div class="spinner"></div>';
+    try {
+      if (poolIdx >= pool.length) {
+        pool = await fetchPool();
+        poolIdx = 0;
+      }
+      if (!pool.length) throw new Error('No image posts found');
+      renderMeme(pool[poolIdx++]);
+    } catch (err) {
+      $wrap.innerHTML = `<div class="error-msg">${err.message}</div>`;
+      $title.textContent = 'Error';
+      $btn.disabled = false;
     }
+  }
 
-    async function asyncCall() {
-        // 0%
-        updateProgress(0);
-
-        let repos = await fetch(GITHUB_API + "/users/" + GUTHUB_USER + "/repos", {
-            headers: {
-                'Accept': GITHUB_ACCEPT_MEDIA,
-                "Authorization": authorization
-            }
-        });
-        repos = await repos.json();
-
-        progressStep = 1 / (repos.length + 1)
-        updateProgress(progressStep);
-
-        let data = [];
-
-        async function readRepo(repo) {
-            if (repo.topics.length === 0) {
-                updateProgress(progressStep);
-                return;
-            }
-            let repo_url = `<a href='${repo.html_url}'>${repo.name}</a>`;
-            
-            let now = new Date()
-            let last_push = new Date(Date.parse(repo.pushed_at))
-            let inactivity_days =  Math.round((now.getTime() - last_push.getTime()) / (1000 * 3600 * 24)) 
-            let last_push_date = repo.pushed_at.substr(0, 10)
-
-            let tags = await fetch(repo.tags_url, {
-                headers: {
-                    "Authorization": authorization
-                }
-            })
-            tags = await tags.json()
-
-            let last_tag = tags.length > 0 ? tags[0].name : ""
-
-            let badges = [
-                {
-                    name: "Travis CI",
-                    link: `https://www.travis-ci.org/${repo.full_name}`,
-                    img: `https://www.travis-ci.org/${repo.full_name}.svg?branch=${repo.default_branch}`
-                },
-                {
-                    name: "Issues",
-                    link: repo.html_url + "/issues",
-                    img: `https://img.shields.io/github/issues/${repo.full_name}`
-                },
-                {
-                    name: "Pull Requests",
-                    link: repo.html_url + "/pulls",
-                    img: `https://img.shields.io/github/issues-pr/${repo.full_name}`
-                }
-            ]
-
-            let language = repo.language
-            if (["Kotlin"].includes(language)) {
-                let gradle = await fetch(`https://raw.githubusercontent.com/${repo.full_name}/master/build.gradle`)
-                gradle = await gradle.text()
-
-                kotlin_version = gradle.split("\n").find(line => line.indexOf("org.jetbrains.kotlin.jvm") != -1).match(/\d[\d\.]+/g)[0]
-
-                language = `<img src="https://img.shields.io/badge/Kotlin-${kotlin_version}-blue">`
-
-                if (last_tag) {
-                    badges.push({
-                        name: "Latest Version",
-                        link: `https://search.maven.org/search?q=g:%22com.koriit.kotlin%22%20AND%20a:%22${repo.name}%22`,
-                        img: `https://img.shields.io/maven-central/v/com.koriit.kotlin/${repo.name}.svg?label=Maven%20Central`
-                    })
-                }
-                badges.push(
-                    {
-                        name: "CodeFactor",
-                        link: `https://www.codefactor.io/repository/github/${repo.full_name}`,
-                        img: `https://www.codefactor.io/repository/github/${repo.full_name}/badge`
-                    }
-                )
-            }
-            if (["PHP"].includes(language)) {
-                if (last_tag) {
-                    badges.push({
-                        name: "Latest Version",
-                        link: `https://packagist.org/packages/${repo.full_name}`,
-                        img: `https://poser.pugx.org/${repo.full_name}/v/stable`
-                    })
-                }
-            }
-
-            badges.push({
-                name: "License",
-                link: repo.html_url,
-                img: `https://img.shields.io/github/license/${repo.full_name}`
-            })
-
-            badges = badges.map(badge => `<a href="${badge.link}"><img src="${badge.img}" alt="${badge.name}"></a>`).join(" ")
-
-            data.push([repo_url, language, `${inactivity_days}d`, last_push_date, last_tag, badges]);
-            updateProgress(progressStep);
-        }
-
-        let jobs = repos.map(repo => readRepo(repo))
-        for (let job of jobs) {
-            await job
-        }
-
-        $("#report").DataTable({
-            data: data,
-            paging: false,
-            order: [[1, 'asc']],
-            columns: [
-                {title: "Repository"},
-                {title: "Language"},
-                {title: "Last Push"},
-                {title: "Last Push Date"},
-                {title: "Last Tag"},
-                {title: "Badges", width: "60%"},
-            ]
-
-        });
-    }
-
-    asyncCall();
+  showNext();
 </script>
+
 </body>
 </html>
